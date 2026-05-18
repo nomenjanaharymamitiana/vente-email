@@ -4,6 +4,7 @@ import os
 import re
 import secrets
 
+from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -11,6 +12,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 import models
 from database import engine, get_db
+
+load_dotenv()
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -22,6 +25,7 @@ DEFAULT_PRICE = float(os.getenv("VENTE_MAIL_PRICE", "1000"))
 MIN_PAYOUT_BALANCE = float(os.getenv("MIN_PAYOUT_BALANCE", "4000"))
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
+ADMIN_PASSWORD_CONFIGURED = "ADMIN_PASSWORD" in os.environ
 SESSION_SECRET = os.getenv("SESSION_SECRET", "change-this-secret-before-production")
 SESSION_COOKIE = "vente_mail_session"
 CSRF_COOKIE = "vente_mail_csrf"
@@ -132,8 +136,14 @@ def require_admin(request: Request, db: Session) -> models.User | RedirectRespon
 def bootstrap_admin(db: Session) -> None:
     admin = db.query(models.User).filter(models.User.username == ADMIN_USERNAME).first()
     if admin:
+        changed = False
         if admin.role != "admin":
             admin.role = "admin"
+            changed = True
+        if ADMIN_PASSWORD_CONFIGURED and not verify_password(ADMIN_PASSWORD, admin.password):
+            admin.password = hash_password(ADMIN_PASSWORD)
+            changed = True
+        if changed:
             db.commit()
         return
 
