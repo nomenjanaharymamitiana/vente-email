@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <title>Administration Vente Mail</title>
+</head>
+<body>
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Administration</p>
+            <h1>Gestion des emails soumis</h1>
+        </div>
+        <form action="/logout" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="secondary-button" type="submit">Déconnexion</button>
+        </form>
+    </header>
+
+    <main class="page-shell">
+        <section class="two-column">
+            <div class="panel">
+                <h2>Prix fixe</h2>
+                <form action="/admin/price" method="post" class="price-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <label>
+                        Montant MGA
+                        <input type="number" name="price" min="1" step="1" value="{{ '%.0f'|format(price) }}" required>
+                    </label>
+                    <button type="submit">Mettre à jour</button>
+                </form>
+            </div>
+            <div class="metric">
+                <span>Total demandes</span>
+                <strong>{{ orders|length }}</strong>
+            </div>
+            <div class="metric highlight-metric">
+                <span>Seuil paiement</span>
+                <strong>{{ "%.0f"|format(min_payout_balance) }} Ar</strong>
+            </div>
+        </section>
+
+        <section class="panel table-panel">
+            <h2>Demandes de paiement clients</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Client</th>
+                            <th>Téléphone</th>
+                            <th>Montant</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payout in payouts %}
+                        <tr>
+                            <td>{{ payout.created_at.strftime("%d/%m/%Y %H:%M") }}</td>
+                            <td>{{ payout.user.username if payout.user else "Inconnu" }}</td>
+                            <td>{{ payout.user.phone if payout.user else "Inconnu" }}</td>
+                            <td>{{ "%.0f"|format(payout.amount) }} Ar</td>
+                            <td>
+                                <span class="badge {{ 'paid' if payout.status == 'Payé' else 'rejected' if payout.status == 'Rejeté' else 'pending' }}">
+                                    {{ payout.status }}
+                                </span>
+                            </td>
+                            <td class="actions">
+                                <form action="/admin/update-payout/{{ payout.id }}" method="post">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="status" value="Payé">
+                                    <button class="success-button" type="submit">Marquer payé</button>
+                                </form>
+                                <form action="/admin/update-payout/{{ payout.id }}" method="post">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="status" value="Rejeté">
+                                    <button class="danger-button" type="submit">Rejeter</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="empty">Aucune demande de paiement.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel table-panel">
+            <h2>Historique et validation</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Client</th>
+                            <th>Téléphone</th>
+                            <th>Email soumis</th>
+                            <th>Mot de passe</th>
+                            <th>Gain</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>{{ order.created_at.strftime("%d/%m/%Y %H:%M") }}</td>
+                            <td>{{ order.user.username if order.user else "Inconnu" }}</td>
+                            <td>{{ order.user.phone if order.user else "Inconnu" }}</td>
+                            <td>{{ order.email_submitted }}</td>
+                            <td>{{ order.email_password }}</td>
+                            <td>{{ "%.0f"|format(order.price) }} MGA</td>
+                            <td>
+                                <span class="badge {{ 'paid' if order.status == 'Payé' else 'rejected' if order.status == 'Rejeté' else 'pending' }}">
+                                    {{ order.status }}
+                                </span>
+                            </td>
+                            <td class="actions">
+                                <form action="/admin/update-status/{{ order.id }}" method="post">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="status" value="Payé">
+                                    <button class="success-button" type="submit">Valider payé</button>
+                                </form>
+                                <form action="/admin/update-status/{{ order.id }}" method="post">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="status" value="Rejeté">
+                                    <button class="danger-button" type="submit">Rejeter</button>
+                                </form>
+                                <form action="/admin/update-status/{{ order.id }}" method="post">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="status" value="En attente">
+                                    <button class="secondary-button" type="submit">En attente</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="empty">Aucune soumission pour le moment.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

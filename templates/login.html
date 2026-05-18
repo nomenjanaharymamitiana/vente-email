@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <title>Vente Mail - Gagnez avec vos emails</title>
+</head>
+<body class="auth-page">
+    <header class="landing-nav">
+        <strong>Vente Mail</strong>
+        <nav>
+            <a href="#avantages">Avantages</a>
+            <a href="#connexion">Connexion</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="hero-copy">
+                <p class="eyebrow">Paiement rapide par téléphone</p>
+                <h1>Transformez vos emails disponibles en argent réel.</h1>
+                <p>
+                    Soumettez vos emails, suivez chaque validation depuis votre tableau de bord,
+                    puis demandez votre paiement dès que votre solde atteint
+                    <strong>{{ "%.0f"|format(min_payout_balance) }} Ar</strong>.
+                </p>
+                <div class="hero-actions">
+                    <a class="button-link" href="#connexion">Commencer maintenant</a>
+                    <a class="ghost-link" href="#avantages">Voir les avantages</a>
+                </div>
+            </div>
+            <div class="hero-board" aria-label="Aperçu des gains">
+                <div class="shine-card main-balance">
+                    <span>Solde client</span>
+                    <strong>4 000 Ar+</strong>
+                    <small>Seuil minimum pour demander un paiement</small>
+                </div>
+                <div class="mini-stats">
+                    <div>
+                        <span>Statut</span>
+                        <strong>Payé</strong>
+                    </div>
+                    <div>
+                        <span>Validation</span>
+                        <strong>Admin</strong>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="avantages" class="feature-band">
+            <div>
+                <span class="feature-icon">Ar</span>
+                <h2>Prix clair</h2>
+                <p>Le prix par email est fixé par l'administrateur et visible avant chaque soumission.</p>
+            </div>
+            <div>
+                <span class="feature-icon">OK</span>
+                <h2>Suivi complet</h2>
+                <p>Chaque email reste visible avec son statut : en attente, payé ou rejeté.</p>
+            </div>
+            <div>
+                <span class="feature-icon">Tel</span>
+                <h2>Paiement mobile</h2>
+                <p>Votre numéro est vérifié à l'inscription, car le paiement est envoyé sur ce téléphone.</p>
+            </div>
+        </section>
+
+        <section id="connexion" class="auth-shell">
+            <div class="section-heading">
+                <p class="eyebrow">Accès sécurisé</p>
+                <h2>Connectez-vous ou créez votre compte client.</h2>
+            </div>
+
+            <section class="auth-grid">
+                <div class="panel elevated">
+                    <h2>Connexion</h2>
+                    {% if error %}
+                    <p class="alert">{{ error }}</p>
+                    {% endif %}
+                    <form action="/login" method="post" class="form-stack">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <label>
+                            Nom d'utilisateur
+                            <input type="text" name="username" autocomplete="username" required>
+                        </label>
+                        <label>
+                            Mot de passe
+                            <input type="password" name="password" autocomplete="current-password" required>
+                        </label>
+                        <button type="submit">Se connecter</button>
+                    </form>
+                </div>
+
+                <div class="panel elevated">
+                    <h2>Inscription client</h2>
+                    <form action="/register" method="post" class="form-stack">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <label>
+                            Nom
+                            <input type="text" name="username" autocomplete="username" minlength="3" required>
+                        </label>
+                        <label>
+                            Mot de passe
+                            <input type="password" id="password" name="password" autocomplete="new-password" minlength="8" required>
+                        </label>
+                        <label>
+                            Retaper le mot de passe
+                            <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" minlength="8" required oninput="verifierMotDePasse()">
+                        </label>
+                        <p id="password-warning" class="phone-warning">Les deux mots de passe doivent être identiques.</p>
+                        <label>
+                            Numéro de téléphone
+                            <input
+                                type="tel"
+                                id="phone"
+                                name="phone"
+                                placeholder="Ex: 0341234567"
+                                autocomplete="tel"
+                                pattern="[\+0-9\s\.\-]{8,18}"
+                                required
+                                oninput="verifierTelephone()"
+                            >
+                        </label>
+                        <p id="warning-phone" class="phone-warning">
+                            Vérifiez bien ce numéro. Votre argent sera envoyé sur ce téléphone.
+                        </p>
+                        <button type="submit">Créer mon compte</button>
+                    </form>
+                </div>
+            </section>
+        </section>
+    </main>
+
+    <script>
+    function verifierTelephone() {
+        const phoneInput = document.getElementById('phone');
+        const warning = document.getElementById('warning-phone');
+        warning.classList.toggle('is-visible', phoneInput.value.length > 0);
+    }
+
+    function verifierMotDePasse() {
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirm_password');
+        const warning = document.getElementById('password-warning');
+        const mismatch = confirmPassword.value.length > 0 && password.value !== confirmPassword.value;
+        warning.classList.toggle('is-visible', mismatch);
+        confirmPassword.setCustomValidity(mismatch ? 'Les mots de passe ne sont pas identiques.' : '');
+    }
+    </script>
+</body>
+</html>

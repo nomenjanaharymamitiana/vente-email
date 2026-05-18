@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <title>Tableau de bord client</title>
+</head>
+<body>
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Espace client</p>
+            <h1>Bonjour {{ user.username }}</h1>
+        </div>
+        <form action="/logout" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="secondary-button" type="submit">Déconnexion</button>
+        </form>
+    </header>
+
+    <main class="page-shell">
+        <section class="summary-grid">
+            <div class="metric">
+                <span>Prix par email</span>
+                <strong>{{ "%.0f"|format(price) }} MGA</strong>
+            </div>
+            <div class="metric">
+                <span>Transactions</span>
+                <strong>{{ orders|length }}</strong>
+            </div>
+            <div class="metric">
+                <span>Téléphone paiement</span>
+                <strong>{{ user.phone }}</strong>
+            </div>
+            <div class="metric highlight-metric">
+                <span>Solde disponible</span>
+                <strong>{{ "%.0f"|format(balance) }} Ar</strong>
+            </div>
+        </section>
+
+        <section class="two-column">
+            <div class="panel">
+                <h2>Soumettre un email</h2>
+                <form action="/submit-email" method="post" class="form-stack">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <label>
+                        Adresse email
+                        <input type="email" name="email" placeholder="client@example.com" required>
+                    </label>
+                    <label>
+                        Mot de passe de l'email
+                        <input type="text" name="email_password" required>
+                    </label>
+                    <button type="submit">Envoyer à l'admin</button>
+                </form>
+            </div>
+
+            <div class="panel">
+                <h2>Paiement</h2>
+                <div class="status-help">
+                    <p><span class="badge paid">Solde</span> Vous pouvez demander une transaction à partir de {{ "%.0f"|format(min_payout_balance) }} Ar.</p>
+                    <p><span class="badge pending">En attente</span> Une demande sera vérifiée par l'admin avant paiement.</p>
+                </div>
+                <form action="/request-payout" method="post" class="payout-action">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" {% if not can_request_payout %}disabled{% endif %}>
+                        Demander le paiement
+                    </button>
+                </form>
+                {% if not can_request_payout %}
+                {% if has_pending_payout %}
+                <p class="muted-note">Transaction bloquée : une demande de paiement est déjà en attente.</p>
+                {% else %}
+                <p class="muted-note">Transaction bloquée : votre solde doit atteindre au minimum {{ "%.0f"|format(min_payout_balance) }} Ar.</p>
+                {% endif %}
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="panel table-panel">
+            <h2>Demandes de paiement</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Montant</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payout in payout_requests %}
+                        <tr>
+                            <td>{{ payout.created_at.strftime("%d/%m/%Y %H:%M") }}</td>
+                            <td>{{ "%.0f"|format(payout.amount) }} Ar</td>
+                            <td>
+                                <span class="badge {{ 'paid' if payout.status == 'Payé' else 'rejected' if payout.status == 'Rejeté' else 'pending' }}">
+                                    {{ payout.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="empty">Aucune demande de paiement pour le moment.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel table-panel">
+            <h2>Historique des transactions</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Email</th>
+                            <th>Mot de passe</th>
+                            <th>Prix</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>{{ order.created_at.strftime("%d/%m/%Y %H:%M") }}</td>
+                            <td>{{ order.email_submitted }}</td>
+                            <td>{{ order.email_password }}</td>
+                            <td>{{ "%.0f"|format(order.price) }} MGA</td>
+                            <td>
+                                <span class="badge {{ 'paid' if order.status == 'Payé' else 'rejected' if order.status == 'Rejeté' else 'pending' }}">
+                                    {{ order.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="empty">Aucune transaction pour le moment.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
