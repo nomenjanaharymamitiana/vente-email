@@ -3,3 +3,5 @@ uvicorn
 sqlalchemy
 pymysql
 python-multipart
+psycopg2-binary
+jinja2
